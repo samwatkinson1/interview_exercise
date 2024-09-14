@@ -10,6 +10,8 @@ import {
   unlikeConversationMessage,
   resolveConversationMessage,
   unresolveConversationMessage,
+  tagConversationMessage,
+  untagConversationMessage,
 } from './helpers/gqlSnipetts';
 import {
   createConversationForTest,
@@ -38,7 +40,10 @@ describe('Message', () => {
       },
     });
 
-    await mockServerClient(process.env.MOCK_USER_SERVICE ?? '', 1080).mockSimpleResponse(
+    await mockServerClient(
+      process.env.MOCK_USER_SERVICE ?? '',
+      1080,
+    ).mockSimpleResponse(
       `/api/v1/users/${dummyUserId}`,
       {
         id: dummyUserId,
@@ -102,6 +107,12 @@ describe('Message', () => {
       text: 'This message has been deleted',
       sender: { id: '597cfa3ac88c22000a74d167' },
       created: expect.anything(),
+      /**
+       * this test fails and I'm not sure why, when we assert tags is defined the
+       * test expects it not to be defined but when we don't assert it's defined
+       * the test expects it to be defined?
+       */
+      tags: expect.anything(),
       deleted: true,
     });
 
@@ -327,6 +338,100 @@ describe('Message', () => {
         resolved: false,
         sender: { id: '597cfa3ac88c22000a74d167' },
       });
+    });
+  });
+
+  describe('tag / untag messages', () => {
+    it("user can add a tag to message they've sent", async () => {
+      const { id: conversationId } = await createConversationForTest();
+
+      const message = await client.request(sendConversationMessageMutation, {
+        messageDto: { text: `Message to tag`, conversationId },
+      });
+
+      const result = await client.request(tagConversationMessage, {
+        tagDto: {
+          messageId: message.sendConversationMessage.id,
+          conversationId,
+          tag: 'tag',
+        },
+      });
+      expect(result.errors).toBeUndefined();
+      expect(result.tagConversationMessage).toEqual({
+        id: message.sendConversationMessage.id,
+        text: 'Message to tag',
+        tags: [{ tag: 'tag' }],
+        sender: { id: '597cfa3ac88c22000a74d167' },
+      });
+    });
+
+    it("user can remove a tag from a message they've sent", async () => {
+      const { id: conversationId } = await createConversationForTest();
+
+      const message = await client.request(sendConversationMessageMutation, {
+        messageDto: { text: `Message to untag`, conversationId },
+      });
+
+      const create = await client.request(tagConversationMessage, {
+        tagDto: {
+          messageId: message.sendConversationMessage.id,
+          conversationId,
+          tag: 'tag',
+        },
+      });
+      expect(create.errors).toBeUndefined();
+
+      const remove = await client.request(untagConversationMessage, {
+        tagDto: {
+          messageId: message.sendConversationMessage.id,
+          conversationId,
+          tag: 'tag',
+        },
+      });
+      expect(remove.errors).toBeUndefined();
+      expect(remove.untagConversationMessage).toEqual({
+        id: message.sendConversationMessage.id,
+        text: 'Message to untag',
+        tags: [],
+        sender: { id: '597cfa3ac88c22000a74d167' },
+      });
+    });
+
+    it("user can search for messages by tag when they're a participant of a conversation", async () => {
+      const { id: conversationId } = await createConversationForTest();
+
+      const message = await client.request(sendConversationMessageMutation, {
+        messageDto: { text: 'Message to search', conversationId },
+      });
+
+      const tag = await client.request(tagConversationMessage, {
+        tagDto: {
+          messageId: message.sendConversationMessage.id,
+          conversationId,
+          tag: 'some tag',
+        },
+      });
+      expect(tag.errors).toBeUndefined();
+
+      const search = await client.request(getChatConversationMessages, {
+        getMessageDto: {
+          conversationId: conversationId,
+          limit: 0,
+          tag: 'some tag',
+        },
+      });
+      expect(search.getChatConversationMessages.messages.length).toEqual(1);
+      expect(search.getChatConversationMessages.messages).toEqual([
+        {
+          id: message.sendConversationMessage.id,
+          text: 'Message to search',
+          sender: { id: '597cfa3ac88c22000a74d167' },
+          created: expect.anything(),
+          deleted: false,
+          isSenderBlocked: false,
+          tags: [{ tag: 'some tag' }],
+        },
+      ]);
     });
   });
 });

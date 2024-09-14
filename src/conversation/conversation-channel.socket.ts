@@ -49,6 +49,20 @@ export class UnReactedMessageEvent implements BaseEventType {
   ) {}
 }
 
+export class TagAddedMessageEvent implements BaseEventType {
+  public name = 'tag-added';
+  constructor(
+    public message: { tag: string; userId: ObjectId; messageId: ObjectId },
+  ) {}
+}
+
+export class TagRemovedMessageEvent implements BaseEventType {
+  public name = 'tag-removed';
+  constructor(
+    public message: { tag: string; userId: ObjectId; messageId: ObjectId },
+  ) {}
+}
+
 export class ResolveMessageEvent implements BaseEventType {
   public name = 'resolve-message';
   constructor(public message: { id: ObjectId }) {}

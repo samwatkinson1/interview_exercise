@@ -131,6 +131,9 @@ export class GetMessageDto {
 
   @Field({ defaultValue: 40 })
   limit: number;
+
+  @Field({ nullable: true })
+  tag?: string;
 }
 
 @InputType()
@@ -176,4 +179,16 @@ export class ReactionDto {
 
   @Field(() => ObjectID)
   conversationId: ObjectID;
+}
+
+@InputType()
+export class TagDto {
+  @Field(() => ObjectID)
+  conversationId: ObjectID;
+
+  @Field(() => ObjectID)
+  messageId: ObjectID;
+
+  @Field(() => String)
+  tag: string;
 }

@@ -61,6 +61,10 @@ export class MessageData {
       query['_id'] = { $lt: data.offsetId };
     }
 
+    if (data.tag) {
+      query['tags.tag'] = { $in: [data.tag] };
+    }
+
     const result: ChatMessageDocument[] = await this.chatMessageModel
       .find(query)
       .limit(hasMoreLimit)
@@ -253,6 +257,54 @@ export class MessageData {
     if (!updatedResult || updatedResult.matchedCount === 0) {
       throw new Error(
         `Failed to remove reaction, messageId: ${messageId.toHexString()}, reaction: ${reaction}, userId: ${userId.toHexString()}`,
+      );
+    }
+
+    return this.getMessage(messageId.toHexString());
+  }
+
+  async addTag(
+    tag: string,
+    userId: ObjectID,
+    messageId: ObjectID,
+  ): Promise<ChatMessage> {
+    const filterBy = { _id: messageId, senderId: userId };
+    const updateProperty = { $addToSet: { tags: { tag } } };
+    const updatedMessage = await this.chatMessageModel.findOneAndUpdate(
+      filterBy,
+      updateProperty,
+      {
+        new: true,
+        returnOriginal: false,
+      },
+    );
+    if (!updatedMessage) {
+      throw new Error(
+        `Failed to add tag, messageId: ${messageId.toHexString()}, tag: ${tag}, userId: ${userId.toHexString()}`,
+      );
+    }
+
+    return this.getMessage(messageId.toHexString());
+  }
+
+  async removeTag(
+    tag: string,
+    userId: ObjectID,
+    messageId: ObjectID,
+  ): Promise<ChatMessage> {
+    const filterBy = { _id: messageId, senderId: userId };
+    const updateProperty = { $pull: { tags: { tag } } };
+    const updatedMessage = await this.chatMessageModel.findOneAndUpdate(
+      filterBy,
+      updateProperty,
+      {
+        new: true,
+        returnOriginal: false,
+      },
+    );
+    if (!updatedMessage) {
+      throw new Error(
+        `Failed to remove tag, messageId: ${messageId.toHexString()}, tag: ${tag}, userId: ${userId.toHexString()}`,
       );
     }
 

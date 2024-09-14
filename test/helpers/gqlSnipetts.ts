@@ -22,6 +22,9 @@ export const getChatConversationMessages = gql`
         id
         created
         text
+        tags {
+          tag
+        }
         sender {
           id
         }
@@ -120,6 +123,36 @@ export const conversationInboxEntity = gql`
         conversations {
           id
         }
+      }
+    }
+  }
+`;
+
+export const tagConversationMessage = gql`
+  mutation ($tagDto: TagDto!) {
+    tagConversationMessage(tagDto: $tagDto) {
+      id
+      text
+      tags {
+        tag
+      }
+      sender {
+        id
+      }
+    }
+  }
+`;
+
+export const untagConversationMessage = gql`
+  mutation ($tagDto: TagDto!) {
+    untagConversationMessage(tagDto: $tagDto) {
+      id
+      text
+      tags {
+        tag
+      }
+      sender {
+        id
       }
     }
   }

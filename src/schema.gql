@@ -29,12 +29,8 @@ type Reaction {
   userIds: [String!]!
 }
 
-type ChatConversation {
-  id: ID!
-  unreadMessageCount: Int
-  lastMessage: ChatMessage
-  pinnedMessages: [ChatMessage!]!
-  pinnedMessagesCount: Int!
+type Tag {
+  tag: String!
 }
 
 type UserField {
@@ -107,6 +103,7 @@ type ChatMessage {
   richContent: RichMessageContent
   reactions: [Reaction!]
   isSenderBlocked: Boolean
+  tags: [Tag!]
 }
 
 """
@@ -117,6 +114,14 @@ scalar DateTime
 type PaginatedChatMessages {
   messages: [ChatMessage!]!
   hasMore: Boolean!
+}
+
+type ChatConversation {
+  id: ID!
+  unreadMessageCount: Int
+  lastMessage: ChatMessage
+  pinnedMessages: [ChatMessage!]!
+  pinnedMessagesCount: Int!
 }
 
 type LastRead {
@@ -144,6 +149,7 @@ input GetMessageDto {
   conversationId: ObjectId!
   offsetId: ObjectId
   limit: Int = 40
+  tag: String
 }
 
 type Mutation {
@@ -154,6 +160,8 @@ type Mutation {
   deleteConversationMessage(deleteMessageDto: DeleteMessageDto!): ChatMessage!
   resolveConversationMessage(resolveMessageDto: ResolveMessageDto!): ChatMessage!
   unresolveConversationMessage(resolveMessageDto: ResolveMessageDto!): ChatMessage!
+  tagConversationMessage(tagDto: TagDto!): ChatMessage!
+  untagConversationMessage(tagDto: TagDto!): ChatMessage!
   likeConversationMessage(likeMessageDto: LikeMessageDto!): ChatMessage!
   unlikeConversationMessage(likeMessageDto: LikeMessageDto!): ChatMessage!
   addReactionToMessage(reactionDto: ReactionDto!): ChatMessage!
@@ -233,6 +241,12 @@ input DeleteMessageDto {
 input ResolveMessageDto {
   conversationId: ObjectId!
   messageId: ObjectId!
+}
+
+input TagDto {
+  conversationId: ObjectId!
+  messageId: ObjectId!
+  tag: String!
 }
 
 input LikeMessageDto {

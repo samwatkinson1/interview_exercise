@@ -180,6 +180,22 @@ export class ConversationData implements IConversationData {
     return chatConversationToObject(dbResult);
   }
 
+  async update(
+    conversationId: string,
+    data: CreateChatConversationDto,
+  ): Promise<ChatConversationModel> {
+    const result = await this.chatConversationModel.findByIdAndUpdate(
+      { _id: conversationId },
+      data,
+      { new: true },
+    );
+    if (!result) throw new Error('Could not update the conversation');
+    const conversation = chatConversationToObject(result);
+
+    this.conversationCacheManagerService.set(conversation, conversationId);
+    return conversation;
+  }
+
   async createChatConversation(
     data: ChatConversationModel,
   ): Promise<ChatConversationModel> {

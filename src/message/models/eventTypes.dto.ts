@@ -1,5 +1,5 @@
 import { Product } from '../../conversation/models/ContextSchema.dto';
-import { AttachmentDto, PollDto } from './message.dto';
+import { AttachmentDto, PollDto, TagDto } from './message.dto';
 
 export type Envelope = {
   id: string;
@@ -25,4 +25,5 @@ export type MessagePayload = {
   imageCount?: number;
   attachments?: AttachmentDto[];
   poll?: PollDto;
+  tags?: TagDto[];
 };

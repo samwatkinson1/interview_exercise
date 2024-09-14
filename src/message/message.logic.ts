@@ -13,6 +13,7 @@ import {
   ResolveMessageDto,
   ReactionDto,
   PollOptionDto,
+  TagDto,
 } from './models/message.dto';
 import { MessageData } from './message.data';
 import { IAuthenticatedUser } from '../authentication/jwt.strategy';
@@ -29,6 +30,8 @@ import {
   UnresolveMessageEvent,
   ReactedMessageEvent,
   UnReactedMessageEvent,
+  TagAddedMessageEvent,
+  TagRemovedMessageEvent,
 } from '../conversation/conversation-channel.socket';
 import { UserService } from '../user/user.service';
 import { ConversationData } from '../conversation/conversation.data';
@@ -278,7 +281,6 @@ export class MessageLogic implements IMessageLogic {
     return blockedUsers.map((user) => user.blockedUserId);
   }
 
-
   async getChatConversationMessages(
     getMessageDto: GetMessageDto,
     authenticatedUser: IAuthenticatedUser,
@@ -313,7 +315,6 @@ export class MessageLogic implements IMessageLogic {
       paginatedChatMessages,
       blockedUserIds,
     );
-  
 
     return paginatedChatMessages;
   }
@@ -564,6 +565,61 @@ export class MessageLogic implements IMessageLogic {
     this.conversationChannel.send(
       messageEvent,
       reaction.conversationId.toHexString(),
+    );
+
+    return message;
+  }
+
+  async addTagToMessage(tag: TagDto, authenticatedUser: IAuthenticatedUser) {
+    await this.throwForbiddenErrorIfNotAuthorized(
+      authenticatedUser,
+      tag.messageId,
+      Action.updateMessage,
+    );
+
+    const message = await this.messageData.addTag(
+      tag.tag,
+      authenticatedUser.userId,
+      tag.messageId,
+    );
+
+    const messageEvent = new TagAddedMessageEvent({
+      tag: tag.tag,
+      userId: authenticatedUser.userId,
+      messageId: tag.messageId,
+    });
+    this.conversationChannel.send(
+      messageEvent,
+      tag.conversationId.toHexString(),
+    );
+
+    return message;
+  }
+
+  async removeTagFromMessage(
+    tag: TagDto,
+    authenticatedUser: IAuthenticatedUser,
+  ) {
+    await this.throwForbiddenErrorIfNotAuthorized(
+      authenticatedUser,
+      tag.messageId,
+      Action.updateMessage,
+    );
+
+    const message = await this.messageData.removeTag(
+      tag.tag,
+      authenticatedUser.userId,
+      tag.messageId,
+    );
+
+    const messageEvent = new TagRemovedMessageEvent({
+      tag: tag.tag,
+      userId: authenticatedUser.userId,
+      messageId: tag.messageId,
+    });
+    this.conversationChannel.send(
+      messageEvent,
+      tag.conversationId.toHexString(),
     );
 
     return message;

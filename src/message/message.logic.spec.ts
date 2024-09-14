@@ -19,6 +19,8 @@ import {
   UnReactedMessageEvent,
   UnlikeMessageEvent,
   UnresolveMessageEvent,
+  TagAddedMessageEvent,
+  TagRemovedMessageEvent,
 } from '../conversation/conversation-channel.socket';
 import { PermissionsService } from '../permissions/permissions.service';
 import { ObjectID, ObjectId } from 'mongodb';
@@ -352,16 +354,24 @@ describe('MessageLogic', () => {
           deleted: false,
           resolved: false,
           likes: [],
+          tags: [{ tag: 'some tag' }],
           likesCount: 0,
           isSenderBlocked: false,
         },
       ];
 
       //limitted data based on given limit in pagination
-      const messages = allMessages.slice(
+      let messages = allMessages.slice(
         0,
         Math.min(data.limit, allMessages.length),
       );
+
+      // mock tag filtering that is normally handled by orm
+      if (data.tag) {
+        messages = messages.filter((message) =>
+          message.tags?.some(({ tag }) => tag === data.tag),
+        );
+      }
 
       return Promise.resolve({
         messages,
@@ -397,6 +407,18 @@ describe('MessageLogic', () => {
     }
 
     removeReaction(reaction: string, userId: ObjectID, messageId: ObjectID) {
+      return Promise.resolve(
+        this.getMockMessage(messageId.toHexString(), userId.toHexString()),
+      );
+    }
+
+    addTag(tag: string, userId: ObjectID, messageId: ObjectID) {
+      return Promise.resolve(
+        this.getMockMessage(messageId.toHexString(), userId.toHexString()),
+      );
+    }
+
+    removeTag(tag: string, userId: ObjectID, messageId: ObjectID) {
       return Promise.resolve(
         this.getMockMessage(messageId.toHexString(), userId.toHexString()),
       );
@@ -549,7 +571,6 @@ describe('MessageLogic', () => {
   class MockConversationChannel {
     send = jest.fn();
   }
-
 
   class MockUserBlocksLogic implements IUserBlocksLogic {
     getBlockedUsers(
@@ -1234,6 +1255,20 @@ describe('MessageLogic', () => {
       );
       expect(messages.messages[1].isSenderBlocked).toEqual(true);
     });
+
+    it('should return filtered chat conversation messages by tag', async () => {
+      await messageLogic.addTagToMessage(
+        { conversationId, messageId, tag: 'some tag' },
+        validUser,
+      );
+
+      const result = await messageLogic.getChatConversationMessages(
+        { conversationId, limit: 2, tag: 'some tag' },
+        validUser,
+      );
+
+      expect(result.messages).toHaveLength(1);
+    });
   });
 
   describe('react / un-react', () => {
@@ -1288,6 +1323,48 @@ describe('MessageLogic', () => {
       );
 
       expect(messageData.removeReaction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('tags', () => {
+    it('can add a tag to a message and data/ send event called', async () => {
+      jest.spyOn(messageData, 'addTag');
+
+      await messageLogic.addTagToMessage(
+        { messageId, conversationId, tag: 'tag' },
+        validUser,
+      );
+      expect(messageData.addTag).toHaveBeenCalledTimes(1);
+
+      const event = new TagAddedMessageEvent({
+        userId: validUser.userId,
+        messageId,
+        tag: 'tag',
+      });
+      expect(conversationChannel.send).toHaveBeenCalledWith(
+        event,
+        conversationId.toHexString(),
+      );
+    });
+
+    it('can remove a tag on a message and data/ send event called', async () => {
+      jest.spyOn(messageData, 'removeTag');
+
+      await messageLogic.removeTagFromMessage(
+        { messageId, conversationId, tag: 'tag' },
+        validUser,
+      );
+      expect(messageData.removeTag).toHaveBeenCalledTimes(1);
+
+      const event = new TagRemovedMessageEvent({
+        userId: validUser.userId,
+        messageId,
+        tag: 'tag',
+      });
+      expect(conversationChannel.send).toHaveBeenCalledWith(
+        event,
+        conversationId.toHexString(),
+      );
     });
   });
 

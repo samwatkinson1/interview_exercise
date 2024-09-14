@@ -1,5 +1,5 @@
 import { DirectConversationDefaultPermissions } from './dto/DirectConversationDefaultPermission';
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ForbiddenError, UserInputError } from 'apollo-server-express';
 import { ObjectID } from 'mongodb';
 
@@ -267,6 +267,13 @@ export class ConversationLogic implements IConversationLogic {
     return this.conversationData.create(createChatConversationDto);
   }
 
+  async update(
+    conversationId: string,
+    data: CreateChatConversationDto,
+  ): Promise<ConversationDTO> {
+    return this.conversationData.update(conversationId, data);
+  }
+
   async getExistingDirectConversation(
     memberIds: string[],
   ): Promise<ChatConversationModel | null> {
@@ -280,7 +287,6 @@ export class ConversationLogic implements IConversationLogic {
   async createDirectChatConversation(
     directChatConversationDto: DirectChatConversationDto,
   ): Promise<ConversationDTO> {
-
     const memberIds = [
       directChatConversationDto.userToConverseWith,
       directChatConversationDto.currentUserId,
