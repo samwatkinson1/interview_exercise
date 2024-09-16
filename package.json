@@ -21,7 +21,8 @@
     "test:e2e:watch": "npm run test:e2e -- --watchAll ",
     "federation-schema": "ts-node ./test/helpers/generateFederatedSchema.ts",
     "refresh": "rm -rf ./node_modules && rm ./package-lock.json && npm install",
-    "token": "ts-node ./src/utils/generateToken.ts"
+    "token": "ts-node ./src/utils/generateToken.ts",
+    "mock-user-server": "ts-node ./src/utils/runMockServer.ts"
   },
   "dependencies": {
     "@apollo/federation": "^0.26.0",

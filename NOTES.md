@@ -4,9 +4,11 @@ Solved in `9a4876cfef8798ad466e4ca849539d8eebd6dbfb`
 
 ## Part 2
 
-Solved in `23ace07b114b7e221a5aa5ccdd606aac82297c55 20fba1914a9cb2e8cd12a645f430d59b35a58246`
+Solved in `f32de2289849aed5a46f113375c2d454e6a5ccb3`
 
 ## Part 3
+
+Solved in `8cc8bef957339ee1efa64e03144bcd9a7a1ea04a`
 
 ### How you would go about implementing the solution
 
@@ -43,3 +45,56 @@ Solved in `23ace07b114b7e221a5aa5ccdd606aac82297c55 20fba1914a9cb2e8cd12a645f430
     - This would make adding tags/updating a 1-many relationship and user specific
     - Would make searching for tags easier, we could pull all user tags from DB and use that in UI for filtering
 - `user can delete a message` e2e test fails for a reason I can't seem to figure out, see comment
+
+## Part 4
+
+Solved in [https://github.com/samwatkinson1/interview_exercise_app](https://github.com/samwatkinson1/interview_exercise_app)
+
+### How you would go about implementing the solution
+
+- First we need to scaffold our app, so we need to introduce a vite project with `npm create vite@latest`
+- We then need to figure out the endpoints to implement and how we should display our information
+- We'll need to add unit tests for UI to cover our application logic
+
+### What problems you might encounter
+
+- How do we represent our data?
+- How do we authorise our user?
+- Do we need to consider using apollo or graphql libraries?
+- CORS...
+    - Turns out this was a vite issue and adding a proxy fixed!
+- Working with GQL
+    - Needed to create a conversation with appropriate permissions
+    - Needed a JWT to authenticate with GQL
+    - Needed to mock user service for API to properly validate auth
+
+### How you would go about testing
+
+- We should add unit testing at a bare minimum to ensure our application logic is error-free, performant and matches our
+  contract
+
+### What might you do differently
+
+- Use the [Patron component library](https://design.unibuddy.com/) for our styling etc.
+- Add e2e testing at a UI level to ensure user flows are error-free
+- A monorepo may be of use here - we could isolate our API and UI code but share any packages/business logic between the
+  two
+- Complete unit testing, having issues with mocking packages and due to time constraints decided to leave as is for
+  reflection
+- The way permissions are handled at the API level could be changed to allow the API to determine what DB operators
+  to
+  used based on permissions given
+    - Currently, we provide objects like below which is insecure as bad actors could use this data to infer how
+      permissions are set up
+      ```js
+       const permission = {
+        action: 'readConversation',
+        subject: 'User',
+        conditions: {
+          userId: {
+            $in: 'conversation.memberIds',
+            $nin: 'conversation.blockedMemberIds',
+          },
+        },
+      };
+      ```
